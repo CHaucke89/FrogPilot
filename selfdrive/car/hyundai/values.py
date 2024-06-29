@@ -98,6 +98,7 @@ class HyundaiFlags(IntFlag):
 
   # FrogPilot HKG flags
   CAN_LFA_BTN = 2 ** 24
+  CANFD_ALT_GEARS_3 = 2 ** 25
 
 class Footnote(Enum):
   CANFD = CarFootnote(
@@ -528,6 +529,13 @@ class CAR(Platforms):
     ],
     CarSpecs(mass=1950, wheelbase=2.87, steerRatio=14.6),
     flags=HyundaiFlags.RADAR_SCC,
+  )
+  GENESIS_GV70_ELECTRIFIED_1ST_GEN = HyundaiCanFDPlatformConfig(
+    [
+      HyundaiCarDocs("Genesis GV70 Electrified (with HDA II) 2023", "Highway Driving Assist II", car_parts=CarParts.common([CarHarness.hyundai_q])),
+    ],
+    CarSpecs(mass=2295, wheelbase=2.87, steerRatio=13.27),
+    flags=HyundaiFlags.EV,
   )
   GENESIS_G80 = HyundaiPlatformConfig(
     [HyundaiCarDocs("Genesis G80 2018-19", "All", car_parts=CarParts.common([CarHarness.hyundai_h]))],
