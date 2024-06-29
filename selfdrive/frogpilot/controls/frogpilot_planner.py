@@ -63,6 +63,7 @@ class FrogPilotPlanner:
     self.standstill_time = 0
     self.tracked_model_length = 0
     self.tracking_lead_distance = 0
+    self.v_cruise = 0
     self.vtsc_target = 0
 
   def update(self, carState, controlsState, frogpilotCarControl, frogpilotCarState, frogpilotNavigation, modelData, radarState, frogpilot_toggles):
@@ -147,6 +148,8 @@ class FrogPilotPlanner:
         self.max_accel = ACCEL_MAX
       else:
         self.max_accel = get_max_accel(v_ego)
+
+    self.max_accel = min(self.max_accel, self.v_cruise / CITY_SPEED_LIMIT * self.max_accel)
 
     if controlsState.experimentalMode:
       self.min_accel = ACCEL_MIN
