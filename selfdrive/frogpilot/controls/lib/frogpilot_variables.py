@@ -4,14 +4,16 @@ from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
+from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.system.version import get_build_metadata
 
 from openpilot.selfdrive.frogpilot.controls.lib.model_manager import NAVIGATION_MODELS, RADARLESS_MODELS
 
-CITY_SPEED_LIMIT = 25  # 55mph is typically the minimum speed for highways
-CRUISING_SPEED = 5     # Roughly the speed cars go when not touching the gas while in drive
-PROBABILITY = 0.6      # 60% chance of condition being true
-THRESHOLD = 5          # Time threshold (0.25s)
+CITY_SPEED_LIMIT = 25                   # 55mph is typically the minimum speed for highways
+CRUISING_SPEED = 5                      # Roughly the speed cars go when not touching the gas while in drive
+PROBABILITY = 0.6                       # 60% chance of condition being true
+THRESHOLD = 5                           # Time threshold (0.25s)
+TRAJECTORY_SIZE = ModelConstants.IDX_N  # Minimum path length
 
 class FrogPilotVariables:
   def __init__(self):

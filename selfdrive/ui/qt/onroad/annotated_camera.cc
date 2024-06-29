@@ -1282,6 +1282,7 @@ void AnnotatedCameraWidget::drawStatusBar(QPainter &p) {
     {14, tr("Experimental Mode activated for stopped lead")},
     {15, tr("Experimental Mode activated for stop light") + (mapOpen ? tr("") : tr(" or stop sign"))},
     {16, tr("Experimental Mode activated due to no speed limit")},
+    {17, tr("Forced \"Experimental Mode\" on for projected stop")},
   };
 
   if (alwaysOnLateralActive && showAlwaysOnLateralStatusBar) {

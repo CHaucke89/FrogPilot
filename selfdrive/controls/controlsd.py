@@ -30,7 +30,6 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
-from openpilot.selfdrive.modeld.constants import ModelConstants
 
 from openpilot.system.hardware import HARDWARE
 
@@ -947,12 +946,8 @@ class Controls:
 
   def update_frogpilot_events(self, CS):
     if self.frogpilot_toggles.green_light_alert and self.previously_enabled and CS.standstill:
-      if ModelConstants.IDX_N - 1 < len(self.sm['modelV2'].position.x):
-        green_light = self.sm['modelV2'].position.x[ModelConstants.IDX_N - 1] > ModelConstants.IDX_N
-        green_light &= not self.sm['longitudinalPlan'].hasLead
-
-        if green_light:
-          self.events.add(EventName.greenLight)
+      if self.sm['frogpilotPlan'].greenLight:
+        self.events.add(EventName.greenLight)
 
     if not self.holiday_theme_alerted and self.frogpilot_toggles.current_holiday_theme != 0 and self.sm.frame * DT_CTRL >= 10:
       self.events.add(EventName.holidayActive)
