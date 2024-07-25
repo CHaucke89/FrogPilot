@@ -71,9 +71,15 @@ def calculate_road_curvature(modelData, v_ego):
   max_pred_lat_acc = np.amax(orientation_rate * velocity)
   return abs(float(max_pred_lat_acc / v_ego**2))
 
-def backup_directory(src, dest, msg_success, msg_fail):
-  os.makedirs(dest, exist_ok=True)
-  run_cmd(['sudo', 'cp', '-a', os.path.join(src, '.'), dest], msg_success, msg_fail)
+def backup_directory(backup, destination, success_msg, fail_msg):
+  os.makedirs(destination, exist_ok=True)
+  try:
+    run_cmd(['sudo', 'cp', '-a', os.path.join(backup, '.'), destination], success_msg, fail_msg)
+  except OSError as e:
+    if e.errno == 28:
+      print("Not enough space to perform the backup.")
+    else:
+      print(f"Failed to backup due to unexpected error: {e}")
 
 def cleanup_backups(directory, limit):
   backups = sorted(glob.glob(os.path.join(directory, "*_auto")), key=os.path.getmtime, reverse=True)

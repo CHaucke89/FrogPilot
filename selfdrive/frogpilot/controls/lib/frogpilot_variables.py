@@ -1,6 +1,5 @@
 import os
 import random
-import re
 
 from types import SimpleNamespace
 
@@ -11,19 +10,11 @@ from openpilot.selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
 from openpilot.system.version import get_build_metadata
 
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_functions import MODELS_PATH
-from openpilot.selfdrive.frogpilot.controls.lib.model_manager import DEFAULT_MODEL, DEFAULT_MODEL_NAME, NAVIGATION_MODELS, RADARLESS_MODELS, STAGING_MODELS
+from openpilot.selfdrive.frogpilot.controls.lib.model_manager import DEFAULT_MODEL, DEFAULT_MODEL_NAME, NAVIGATION_MODELS, RADARLESS_MODELS, STAGING_MODELS, process_model_name
 
 CITY_SPEED_LIMIT = 25  # 55mph is typically the minimum speed for highways
 CRUISING_SPEED = 5     # Roughly the speed cars go when not touching the gas while in drive
 PROBABILITY = 0.6      # 60% chance of condition being true
-
-def process_model_name(model_name):
-  model_cleaned = re.sub(r'[🗺️👀📡]', '', model_name).strip()
-  score_param = re.sub(r'[^a-zA-Z0-9()-]', '', model_cleaned).replace(' ', '').strip()
-  score_param = score_param.replace('(Default)', '').replace('-', '')
-  cleaned_name = ''.join(score_param.split())
-  print(f'Processed Model Name: {cleaned_name}')
-  return cleaned_name
 
 class FrogPilotVariables:
   def __init__(self):
@@ -53,19 +44,19 @@ class FrogPilotVariables:
     key = "CarParams" if started else "CarParamsPersistent"
     msg_bytes = self.params.get(key, block=openpilot_installed and started)
 
-    if msg_bytes is None:
-      always_on_lateral_set = False
-      car_make = "mock"
-      car_model = "mock"
-      openpilot_longitudinal = False
-      pcm_cruise = False
-    else:
+    if msg_bytes:
       with car.CarParams.from_bytes(msg_bytes) as CP:
         always_on_lateral_set = self.params.get_bool("AlwaysOnLateralSet")
         car_make = CP.carName
         car_model = CP.carFingerprint
         openpilot_longitudinal = CP.openpilotLongitudinalControl
         pcm_cruise = CP.pcmCruise
+    else:
+      always_on_lateral_set = False
+      car_make = "mock"
+      car_model = "mock"
+      openpilot_longitudinal = False
+      pcm_cruise = False
 
     toggle.is_metric = self.params.get_bool("IsMetric")
     distance_conversion = 1. if toggle.is_metric else CV.FOOT_TO_METER
@@ -147,12 +138,12 @@ class FrogPilotVariables:
     toggle.aggressive_follow = self.params.get_float("AggressiveFollow") if aggressive_profile else 1.25
     standard_profile = toggle.custom_personalities and self.params.get_bool("StandardPersonalityProfile")
     toggle.standard_jerk_acceleration = self.params.get_int("StandardJerkAcceleration") / 100. if standard_profile else 1.0
-    toggle.standard_jerk_danger = self.params.get_int("StandardJerkDanger") / 100. if aggressive_profile else 0.5
+    toggle.standard_jerk_danger = self.params.get_int("StandardJerkDanger") / 100. if standard_profile else 0.5
     toggle.standard_jerk_speed = self.params.get_int("StandardJerkSpeed") / 100. if standard_profile else 1.0
     toggle.standard_follow = self.params.get_float("StandardFollow") if standard_profile else 1.45
     relaxed_profile = toggle.custom_personalities and self.params.get_bool("RelaxedPersonalityProfile")
     toggle.relaxed_jerk_acceleration = self.params.get_int("RelaxedJerkAcceleration") / 100. if relaxed_profile else 1.0
-    toggle.relaxed_jerk_danger = self.params.get_int("RelaxedJerkDanger") / 100. if aggressive_profile else 0.5
+    toggle.relaxed_jerk_danger = self.params.get_int("RelaxedJerkDanger") / 100. if relaxed_profile else 0.5
     toggle.relaxed_jerk_speed = self.params.get_int("RelaxedJerkSpeed") / 100. if relaxed_profile else 1.0
     toggle.relaxed_follow = self.params.get_float("RelaxedFollow") if relaxed_profile else 1.75
     traffic_profile = toggle.custom_personalities and self.params.get_bool("TrafficPersonalityProfile")
@@ -203,36 +194,33 @@ class FrogPilotVariables:
     available_model_names = self.params.get("AvailableModelsNames", block=toggle.model_manager, encoding='utf-8')
     current_model = self.params_memory.get("CurrentModel", encoding='utf-8')
     current_model_name = self.params_memory.get("CurrentModelName", encoding='utf-8')
-    if toggle.model_manager and available_models is not None and current_model is None:
-      toggle.model_randomizer = toggle.model_manager and self.params.get_bool("ModelRandomizer")
+    if toggle.model_manager and available_models and current_model is None:
+      toggle.model_randomizer = self.params.get_bool("ModelRandomizer")
       if toggle.model_randomizer:
         blacklisted_models = (self.params.get("BlacklistedModels", encoding='utf-8') or '').split(',')
         existing_models = [model for model in available_models.split(',') if model not in blacklisted_models and os.path.exists(os.path.join(MODELS_PATH, f"{model}.thneed"))]
-        if existing_models:
-          toggle.model = random.choice(existing_models)
-        else:
-          toggle.model = DEFAULT_MODEL
-      elif toggle.model_manager:
-        toggle.model = self.params.get("Model", block=True, encoding='utf-8')
+        toggle.model = random.choice(existing_models) if existing_models else DEFAULT_MODEL
       else:
-        toggle.model = DEFAULT_MODEL
+        toggle.model = self.params.get("Model", block=True, encoding='utf-8')
       if self.release and toggle.model in STAGING_MODELS:
         toggle.model = DEFAULT_MODEL
-      self.params_memory.put("CurrentModel", toggle.model)
-      current_model_name = available_model_names.split(',')[available_models.split(',').index(toggle.model)]
-      self.params_memory.put("CurrentModelName", current_model_name)
     else:
       toggle.model = current_model
-      current_model_name = available_model_names.split(',')[available_models.split(',').index(toggle.model)]
-    model_exists = os.path.exists(os.path.join(MODELS_PATH, f"{toggle.model}.thneed"))
-    if model_exists:
-      toggle.part_model_param = process_model_name(current_model_name)
-    else:
+    if not os.path.exists(os.path.join(MODELS_PATH, f"{toggle.model}.thneed")):
       toggle.model = DEFAULT_MODEL
+      current_model_name = DEFAULT_MODEL_NAME
       toggle.part_model_param = ""
+    elif available_model_names is None:
+      current_model_name = DEFAULT_MODEL_NAME
+      toggle.part_model_param = ""
+    else:
+      current_model_name = available_model_names.split(',')[available_models.split(',').index(toggle.model)]
+      toggle.part_model_param = process_model_name(current_model_name)
     toggle.navigationless_model = toggle.model not in NAVIGATION_MODELS
     toggle.radarless_model = toggle.model in RADARLESS_MODELS
     toggle.secretgoodopenpilot_model = toggle.model == "secret-good-openpilot"
+    self.params_memory.put("CurrentModel", toggle.model)
+    self.params_memory.put("CurrentModelName", current_model_name)
 
     quality_of_life_controls = self.params.get_bool("QOLControls")
     toggle.custom_cruise_increase = self.params.get_int("CustomCruise") if quality_of_life_controls and not pcm_cruise else 1

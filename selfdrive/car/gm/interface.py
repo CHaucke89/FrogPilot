@@ -133,6 +133,7 @@ class CarInterface(CarInterfaceBase):
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_CAM_LONG
 
     elif candidate in SDGM_CAR:
+      ret.longitudinalTuning.kiV = [0., 0.]  # TODO: tuning
       ret.experimentalLongitudinalAvailable = False
       ret.networkLocation = NetworkLocation.fwdCamera
       ret.pcmCruise = True
@@ -291,9 +292,6 @@ class CarInterface(CarInterfaceBase):
       ret.pcmCruise = False
 
       ret.stoppingDecelRate = 11.18  # == 25 mph/s (.04 rate)
-
-      ret.longitudinalActuatorDelayLowerBound = 1.  # TODO: measure this
-      ret.longitudinalActuatorDelayUpperBound = 2.
 
       ret.longitudinalTuning.kiBP = [10.7, 10.8, 28.]
       ret.longitudinalTuning.kiV = [0., 20., 20.]  # set lower end to 0 since we can't drive below that speed

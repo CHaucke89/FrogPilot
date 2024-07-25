@@ -469,6 +469,9 @@ void UIState::updateStatus() {
     scene.wake_up_screen = controls_state.getAlertStatus() != cereal::ControlsState::AlertStatus::NORMAL || status != previous_status;
   }
 
+  scene.started |= paramsMemory.getBool("ForceOnroad");
+  scene.started &= !paramsMemory.getBool("ForceOffroad");
+
   // Handle onroad/offroad transition
   if (scene.started != started_prev || sm->frame == 1) {
     if (scene.started) {

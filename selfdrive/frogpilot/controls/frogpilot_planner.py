@@ -46,7 +46,7 @@ class FrogPilotPlanner:
   def __init__(self):
     self.params_memory = Params("/dev/shm/params")
 
-    self.cem = ConditionalExperimentalMode()
+    self.cem = ConditionalExperimentalMode(self)
     self.lead_one = Lead()
     self.mtsc = MapTurnSpeedController()
 
@@ -97,7 +97,7 @@ class FrogPilotPlanner:
 
     run_cem = frogpilot_toggles.conditional_experimental_mode or frogpilot_toggles.force_stops or frogpilot_toggles.show_stopping_point
     if run_cem and (controlsState.enabled or frogpilotCarControl.alwaysOnLateral) and driving_gear:
-      self.cem.update(carState, self.forcing_stop, frogpilotNavigation, modelData, self.model_length, self.model_stopped, self.road_curvature, self.slower_lead, self.tracking_lead, v_ego, v_lead, frogpilot_toggles)
+      self.cem.update(carState, frogpilotNavigation, modelData, v_ego, v_lead, frogpilot_toggles)
 
     check_lane_width = frogpilot_toggles.adjacent_lanes or frogpilot_toggles.blind_spot_path or frogpilot_toggles.lane_detection
     if check_lane_width and v_ego >= frogpilot_toggles.minimum_lane_change_speed:
@@ -123,7 +123,7 @@ class FrogPilotPlanner:
     self.override_force_stop |= carState.gasPressed
     self.override_force_stop |= frogpilot_toggles.force_stops and carState.standstill and self.tracking_lead
     self.override_force_stop |= frogpilotCarControl.resumePressed
-    self.road_curvature = calculate_road_curvature(modelData, v_ego) if not carState.standstill else 1
+    self.road_curvature = calculate_road_curvature(modelData, v_ego) if not carState.standstill and driving_gear else 1
 
     if frogpilot_toggles.random_events and v_ego > CRUISING_SPEED and driving_gear:
       self.taking_curve_quickly = v_ego > (1 / self.road_curvature)**0.5 * 2 > CRUISING_SPEED * 2 and abs(carState.steeringAngleDeg) > 30
@@ -263,7 +263,7 @@ class FrogPilotPlanner:
 
     # Pfeiferj's Speed Limit Controller
     if frogpilot_toggles.speed_limit_controller:
-      SpeedLimitController.update(frogpilotCarState.dashboardSpeedLimit, frogpilotNavigation.navigationSpeedLimit, v_cruise, v_ego, frogpilot_toggles)
+      SpeedLimitController.update(frogpilotCarState.dashboardSpeedLimit, controlsState.enabled, frogpilotNavigation.navigationSpeedLimit, v_cruise, v_ego, frogpilot_toggles)
       unconfirmed_slc_target = SpeedLimitController.desired_speed_limit
 
       if frogpilot_toggles.speed_limit_confirmation and self.slc_target != 0:
