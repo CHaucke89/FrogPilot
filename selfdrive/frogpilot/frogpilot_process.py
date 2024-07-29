@@ -10,6 +10,7 @@ from openpilot.system.hardware import HARDWARE
 
 from openpilot.selfdrive.frogpilot.controls.frogpilot_planner import FrogPilotPlanner
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_functions import backup_toggles, is_url_pingable
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_tracking import FrogPilotTracking
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotVariables
 from openpilot.selfdrive.frogpilot.controls.lib.model_manager import DEFAULT_MODEL, DEFAULT_MODEL_NAME, download_all_models, download_model, update_models
 from openpilot.selfdrive.frogpilot.controls.lib.theme_manager import ThemeManager
@@ -96,10 +97,12 @@ def frogpilot_thread():
   params_storage = Params("/persist/params")
 
   frogpilot_planner = FrogPilotPlanner()
+  frogpilot_tracking = FrogPilotTracking()
   theme_manager = ThemeManager()
 
   is_release = FrogPilotVariables.release
   run_time_checks = False
+  started_previously = False
   time_validated = system_time_valid()
   update_toggles = False
 
@@ -115,10 +118,16 @@ def frogpilot_thread():
     deviceState = sm['deviceState']
     started = deviceState.started
 
+    if not started and started_previously:
+      frogpilot_planner = FrogPilotPlanner()
+      frogpilot_tracking = FrogPilotTracking()
+
     if started and sm.updated['modelV2']:
       frogpilot_planner.update(sm['carState'], sm['controlsState'], sm['frogpilotCarControl'], sm['frogpilotCarState'],
                                sm['frogpilotNavigation'], sm['modelV2'], sm['radarState'], frogpilot_toggles)
       frogpilot_planner.publish(sm, pm, frogpilot_toggles)
+
+      frogpilot_tracking.update(sm['carState'])
 
     model_to_download = params_memory.get("ModelToDownload", encoding='utf-8')
     if model_to_download:
@@ -140,6 +149,8 @@ def frogpilot_thread():
         run_thread_with_lock("backup_toggles", locks["backup_toggles"], backup_toggles, (params, params_storage))
 
       update_toggles = False
+
+    started_previously = started
 
     if now.second == 0:
       run_time_checks = True
