@@ -345,6 +345,10 @@ def joystick_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster,
 
 
 # FrogPilot Alerts
+def custom_startup_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
+  params = Params()
+  return StartupAlert(params.get("StartupMessageTop", encoding='utf-8') or "", params.get("StartupMessageBottom", encoding='utf-8') or "", alert_status=AlertStatus.frogpilot)
+
 def holiday_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
   holiday_messages = {
     "new_years": ("Happy New Year! 🎉", "newYearsDayAlert"),
@@ -1009,6 +1013,10 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Please don't use the 'Development' branch!"),
   },
 
+  EventName.customStartupAlert: {
+    ET.PERMANENT: custom_startup_alert,
+  },
+
   EventName.forcingStop: {
     ET.WARNING: Alert(
       "Forcing the car to stop",
@@ -1188,6 +1196,14 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "👺",
       AlertStatus.frogpilot, AlertSize.mid,
       Priority.MID, VisualAlert.none, AudibleAlert.angry, 5.),
+  },
+
+  EventName.youveGotMail: {
+    ET.PERMANENT: Alert(
+      "You've got mail! 📧",
+      "",
+      AlertStatus.frogpilot, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.mail, 3.),
   },
 }
 

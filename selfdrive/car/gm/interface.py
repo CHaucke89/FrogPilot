@@ -41,10 +41,7 @@ NEURAL_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/neural_ff_
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed, frogpilot_toggles):
-    if frogpilot_toggles.sport_plus:
-      return CarControllerParams.ACCEL_MIN, get_max_allowed_accel(current_speed)
-    else:
-      return CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX
+    return CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX
 
   # Determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
   @staticmethod

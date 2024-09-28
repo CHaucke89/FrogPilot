@@ -18,10 +18,8 @@ SteerControlType = car.CarParams.SteerControlType
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed, frogpilot_toggles):
-    if frogpilot_toggles.sport_plus:
-      return CarControllerParams.ACCEL_MIN, get_max_allowed_accel(current_speed)
-    else:
-      return CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX
+    CCP = CarControllerParams(CP)
+    return CCP.ACCEL_MIN, CCP.ACCEL_MAX
 
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, disable_openpilot_long, experimental_long, docs, params):
@@ -63,6 +61,9 @@ class CarInterface(CarInterfaceBase):
     found_ecus = [fw.ecu for fw in car_fw]
     ret.enableDsu = len(found_ecus) > 0 and Ecu.dsu not in found_ecus and candidate not in (NO_DSU_CAR | UNSUPPORTED_DSU_CAR) \
                                         and not (ret.flags & ToyotaFlags.SMART_DSU)
+
+    if candidate == CAR.LEXUS_ES_TSS2 and Ecu.hybrid not in found_ecus:
+      ret.flags |= ToyotaFlags.RAISED_ACCEL_LIMIT.value
 
     if candidate == CAR.TOYOTA_PRIUS:
       # Only give steer angle deadzone to for bad angle sensor prius
@@ -156,10 +157,14 @@ class CarInterface(CarInterfaceBase):
     elif candidate in TSS2_CAR or ret.enableGasInterceptor:
       tune.kpV = [0.0]
       tune.kiV = [0.5]
-      if candidate in TSS2_CAR:
-        ret.vEgoStopping = 0.25
-        ret.vEgoStarting = 0.25
-        ret.stoppingDecelRate = 0.3  # reach stopping target smoothly
+      ret.vEgoStopping = 0.25
+      ret.vEgoStarting = 0.25
+      ret.stoppingDecelRate = 0.1  # reach stopping target smoothly
+
+      # Since we compensate for imprecise acceleration in carcontroller, we can be less aggressive with tuning
+      # This also prevents unnecessary request windup due to internal car jerk limits
+      if ret.flags & ToyotaFlags.RAISED_ACCEL_LIMIT:
+        tune.kiV = [0.25]
     else:
       tune.kiBP = [0., 5., 35.]
       tune.kiV = [3.6, 2.4, 1.5]
@@ -175,7 +180,7 @@ class CarInterface(CarInterfaceBase):
 
   # returns a car.CarState
   def _update(self, c, frogpilot_toggles):
-    ret, fp_ret = self.CS.update(self.cp, self.cp_cam, frogpilot_toggles)
+    ret, fp_ret = self.CS.update(self.cp, self.cp_cam, c, frogpilot_toggles)
 
     if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR) or (self.CP.flags & ToyotaFlags.SMART_DSU and not self.CP.flags & ToyotaFlags.RADAR_CAN_FILTER):
       ret.buttonEvents = [

@@ -2,7 +2,7 @@ from openpilot.common.numpy_fast import clip, interp
 
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import COMFORT_BRAKE, get_jerk_factor, get_safe_obstacle_distance, get_stopped_equivalence_factor, get_T_FOLLOW
 
-from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import CITY_SPEED_LIMIT, CRUISING_SPEED
+from openpilot.selfdrive.frogpilot.frogpilot_variables import CITY_SPEED_LIMIT, CRUISING_SPEED
 
 TRAFFIC_MODE_BP = [0., CITY_SPEED_LIMIT]
 
@@ -10,6 +10,7 @@ class FrogPilotFollowing:
   def __init__(self, FrogPilotPlanner):
     self.frogpilot_planner = FrogPilotPlanner
 
+    self.following_lead = False
     self.slower_lead = False
 
     self.acceleration_jerk = 0
@@ -42,8 +43,10 @@ class FrogPilotFollowing:
         frogpilot_toggles.custom_personalities, controlsState.personality
       )
 
+    self.following_lead = self.frogpilot_planner.tracking_lead and lead_distance < (self.t_follow + 1) * v_ego
+
     if self.frogpilot_planner.tracking_lead:
-      self.safe_obstacle_distance = int(get_safe_obstacle_distance(v_ego, self.t_follow))
+      self.safe_obstacle_distance = int(get_safe_obstacle_distance(v_ego, self.t_follow, stopping_distance))
       self.safe_obstacle_distance_stock = self.safe_obstacle_distance
       self.stopped_equivalence_factor = int(get_stopped_equivalence_factor(v_lead))
       self.update_follow_values(lead_distance, stopping_distance, v_ego, v_lead, frogpilot_toggles)
