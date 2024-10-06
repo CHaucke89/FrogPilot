@@ -52,8 +52,6 @@ private:
   bool parentToggleOpen;
   bool subParentToggleOpen;
   bool subSubParentToggleOpen;
-
-  int previousScrollPosition;
 };
 
 class DevicePanel : public ListWidget {
@@ -74,6 +72,8 @@ private slots:
 private:
   Params params;
   ButtonControl *pair_device;
+
+  // FrogPilot variables
   ButtonControl *resetCalibBtn;
 };
 
@@ -124,4 +124,6 @@ private:
 
   // FrogPilot variables
   Params paramsMemory{"/dev/shm/params"};
+
+  bool frogsGoMoo = getDongleId().value_or("") == "FrogsGoMoo";
 };

@@ -59,13 +59,6 @@ class CarControllerParams:
       self.INACTIVE_REGEN = 5650
       self.max_regen_acceleration = 0.
 
-    elif CP.carFingerprint in SDGM_CAR:
-      self.MAX_GAS = 7496
-      self.MAX_GAS_PLUS = 7496
-      self.MAX_ACC_REGEN = 5610
-      self.INACTIVE_REGEN = 5650
-      max_regen_acceleration = 0.
-
     else:
       self.MAX_GAS = 7168  # Safety limit, not ACC max. Stock ACC >8192 from standstill.
       self.MAX_GAS_PLUS = 8191 # 8292 uses new bit, possible but not tested. Matches Twilsonco tw-main max

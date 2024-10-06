@@ -144,7 +144,7 @@ class CarController(CarControllerBase):
 
     # For cars where we allow a higher max acceleration of 2.0 m/s^2, compensate for PCM request overshoot and imprecise braking
     # TODO: sometimes when switching from brake to gas quickly, CLUTCH->ACCEL_NET shows a slow unwind. make it go to 0 immediately
-    if self.CP.flags & ToyotaFlags.RAISED_ACCEL_LIMIT and CC.longActive and not CS.out.cruiseState.standstill:
+    if CC.longActive and not CS.out.cruiseState.standstill:
       # calculate amount of acceleration PCM should apply to reach target, given pitch
       accel_due_to_pitch = math.sin(CS.slope_angle) * ACCELERATION_DUE_TO_GRAVITY
       net_acceleration_request = actuators.accel + accel_due_to_pitch
@@ -257,16 +257,6 @@ class CarController(CarControllerBase):
     new_actuators.steerOutputCan = apply_steer
     new_actuators.steeringAngleDeg = self.last_angle
     new_actuators.accel = self.accel
-
-    # Lock doors when in drive / unlock doors when in park
-    if not self.doors_locked and CS.out.gearShifter != PARK:
-      if frogpilot_toggles.lock_doors:
-        can_sends.append(make_can_msg(0x750, LOCK_CMD, 0))
-      self.doors_locked = True
-    elif self.doors_locked and CS.out.gearShifter == PARK:
-      if frogpilot_toggles.unlock_doors:
-        can_sends.append(make_can_msg(0x750, UNLOCK_CMD, 0))
-      self.doors_locked = False
 
     # Lock doors when in drive / unlock doors when in park
     if not self.doors_locked and CS.out.gearShifter != PARK:

@@ -1,3 +1,7 @@
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+
 #include "selfdrive/ui/ui.h"
 
 void updateFrogPilotToggles() {
@@ -10,15 +14,15 @@ void updateFrogPilotToggles() {
     return;
   }
 
+  if (resetThread.joinable()) {
+    resetThread.join();
+  }
+
   paramsMemory.putBool("FrogPilotTogglesUpdated", true);
 
   resetThread = std::thread([&]() {
     util::sleep_for(1000);
     paramsMemory.putBool("FrogPilotTogglesUpdated", false);
-
-    if (resetThread.joinable()) {
-      resetThread.join();
-    }
 
     isUpdating.store(false);
   });

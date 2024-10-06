@@ -57,8 +57,9 @@ class FrogPilotPlanner:
 
     driving_gear = carState.gearShifter not in NON_DRIVING_GEARS
 
-    lead_distance = self.lead_one.dRel
-    stopping_distance = frogpilot_toggles.stopping_distance if not frogpilotCarState.trafficModeActive else STOP_DISTANCE
+    distance_offset = max(frogpilot_toggles.increase_stopped_distance + min(10 - v_ego, 0), 0) if not frogpilotCarState.trafficModeActive else 0
+    lead_distance = self.lead_one.dRel - distance_offset
+    stopping_distance = STOP_DISTANCE + distance_offset
 
     self.frogpilot_acceleration.update(controlsState, frogpilotCarState, v_cruise, v_ego, frogpilot_toggles)
 
@@ -69,9 +70,9 @@ class FrogPilotPlanner:
       self.cem.stop_light_detected = False
 
     self.frogpilot_events.update(carState, controlsState, frogpilotCarControl, frogpilotCarState, modelData, frogpilot_toggles)
-    self.frogpilot_following.update(controlsState, frogpilotCarState, lead_distance, stopping_distance, v_ego, v_lead, frogpilot_toggles)
+    self.frogpilot_following.update(carState.aEgo, controlsState, frogpilotCarState, lead_distance, stopping_distance, v_ego, v_lead, frogpilot_toggles)
 
-    check_lane_width = frogpilot_toggles.adjacent_lanes or frogpilot_toggles.blind_spot_path or frogpilot_toggles.lane_detection
+    check_lane_width = frogpilot_toggles.adjacent_lanes or frogpilot_toggles.adjacent_path_metrics or frogpilot_toggles.blind_spot_path or frogpilot_toggles.lane_detection
     if check_lane_width and v_ego >= frogpilot_toggles.minimum_lane_change_speed:
       self.lane_width_left = calculate_lane_width(modelData.laneLines[0], modelData.laneLines[1], modelData.roadEdges[0])
       self.lane_width_right = calculate_lane_width(modelData.laneLines[3], modelData.laneLines[2], modelData.roadEdges[1])

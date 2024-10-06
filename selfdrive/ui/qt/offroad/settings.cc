@@ -770,6 +770,7 @@ void DevicePanel::showEvent(QShowEvent *event) {
   pair_device->setVisible(uiState()->primeType() == PrimeType::UNPAIRED);
   ListWidget::showEvent(event);
 
+  // Frogpilot variables
   resetCalibBtn->setVisible(!params.getBool("ModelManagement"));
 }
 
@@ -781,8 +782,6 @@ void SettingsWindow::hideEvent(QHideEvent *event) {
   parentToggleOpen = false;
   subParentToggleOpen = false;
   subSubParentToggleOpen = false;
-
-  previousScrollPosition = 0;
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
@@ -854,6 +853,15 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QObject::connect(frogpilotSettingsWindow, &FrogPilotSettingsWindow::openSubParentToggle, [this]() {subParentToggleOpen=true;});
   QObject::connect(frogpilotSettingsWindow, &FrogPilotSettingsWindow::openSubSubParentToggle, [this]() {subSubParentToggleOpen=true;});
 
+  // FrogPilot panels
+  QObject::connect(toggles, &TogglesPanel::updateMetric, this, &SettingsWindow::updateMetric);
+
+  FrogPilotSettingsWindow *frogpilotSettingsWindow = new FrogPilotSettingsWindow(this);
+  QObject::connect(frogpilotSettingsWindow, &FrogPilotSettingsWindow::openPanel, [this]() {panelOpen=true;});
+  QObject::connect(frogpilotSettingsWindow, &FrogPilotSettingsWindow::openParentToggle, [this]() {parentToggleOpen=true;});
+  QObject::connect(frogpilotSettingsWindow, &FrogPilotSettingsWindow::openSubParentToggle, [this]() {subParentToggleOpen=true;});
+  QObject::connect(frogpilotSettingsWindow, &FrogPilotSettingsWindow::openSubSubParentToggle, [this]() {subSubParentToggleOpen=true;});
+
   QList<QPair<QString, QWidget *>> panels = {
     {tr("Device"), device},
     {tr("Network"), new Networking(this)},
@@ -917,7 +925,6 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
         closeParentToggle();
         parentToggleOpen = false;
       }
-      previousScrollPosition = 0;
       btn->setChecked(true);
       panel_widget->setCurrentWidget(w);
     });

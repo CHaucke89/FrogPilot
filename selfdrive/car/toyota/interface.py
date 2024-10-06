@@ -62,7 +62,7 @@ class CarInterface(CarInterfaceBase):
     ret.enableDsu = len(found_ecus) > 0 and Ecu.dsu not in found_ecus and candidate not in (NO_DSU_CAR | UNSUPPORTED_DSU_CAR) \
                                         and not (ret.flags & ToyotaFlags.SMART_DSU)
 
-    if candidate == CAR.LEXUS_ES_TSS2 and Ecu.hybrid not in found_ecus:
+    if candidate in (CAR.LEXUS_ES_TSS2, CAR.TOYOTA_COROLLA_TSS2) and Ecu.hybrid not in found_ecus:
       ret.flags |= ToyotaFlags.RAISED_ACCEL_LIMIT.value
 
     if candidate == CAR.TOYOTA_PRIUS:
@@ -139,35 +139,17 @@ class CarInterface(CarInterfaceBase):
     ret.minEnableSpeed = -1. if (candidate in STOP_AND_GO_CAR or ret.enableGasInterceptor) else MIN_ACC_SPEED
 
     tune = ret.longitudinalTuning
-    if params.get_bool("CydiaTune"):
-      ret.stopAccel = -2.5           # on stock Toyota this is -2.5
-      ret.stoppingDecelRate = 0.3    # reach stopping target smoothly
-      if candidate in TSS2_CAR or ret.enableGasInterceptor:
-        tune.kiV = [0.5]
-        ret.vEgoStopping = 0.25
-        ret.vEgoStarting = 0.25
-      else:
-        tune.kiV = [1.2]             # appears to produce minimal oscillation on TSS-P
-    elif params.get_bool("FrogsGoMooTune"):
-      ret.stopAccel = -2.5           # on stock Toyota this is -2.5
-      ret.stoppingDecelRate = 0.1    # reach stopping target smoothly
-      ret.vEgoStarting = 0.1
-      ret.vEgoStopping = 0.1
-      tune.kiV = [1.0]
-    elif candidate in TSS2_CAR or ret.enableGasInterceptor:
-      tune.kpV = [0.0]
-      tune.kiV = [0.5]
+    tune.kpV = [0.0]
+    tune.kiV = [0.25]
+
+    if params.get_bool("FrogsGoMoosTweak"):
+      ret.stoppingDecelRate = 0.1  # reach stopping target smoothly
+      ret.vEgoStopping = 0.15
+      ret.vEgoStarting = 0.15
+    else:
+      ret.stoppingDecelRate = 0.3  # reach stopping target smoothly
       ret.vEgoStopping = 0.25
       ret.vEgoStarting = 0.25
-      ret.stoppingDecelRate = 0.1  # reach stopping target smoothly
-
-      # Since we compensate for imprecise acceleration in carcontroller, we can be less aggressive with tuning
-      # This also prevents unnecessary request windup due to internal car jerk limits
-      if ret.flags & ToyotaFlags.RAISED_ACCEL_LIMIT:
-        tune.kiV = [0.25]
-    else:
-      tune.kiBP = [0., 5., 35.]
-      tune.kiV = [3.6, 2.4, 1.5]
 
     return ret
 

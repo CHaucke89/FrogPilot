@@ -77,19 +77,6 @@ class RouteEngine:
 
     self.nav_speed_limit = 0
 
-    # FrogPilot variables
-    self.frogpilot_toggles = FrogPilotVariables.toggles
-    FrogPilotVariables.update_frogpilot_params()
-
-    self.stop_coord = []
-    self.stop_signal = []
-
-    self.approaching_intersection = False
-    self.approaching_turn = False
-    self.update_toggles = False
-
-    self.nav_speed_limit = 0
-
   def update(self):
     self.sm.update(0)
 
